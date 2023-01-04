@@ -2,7 +2,7 @@ package blockchain
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/qwertyqq2/sl2blockchain/crypto"
@@ -65,7 +65,7 @@ func (l *LevelDB) size() uint64 {
 	var index uint64
 	row := l.db.QueryRow("SELECT Id FROM Blockchain ORDER BY Id DESC")
 	row.Scan(&index)
-	fmt.Println("size", index)
+	//fmt.Println("size", index)
 	return index
 }
 
@@ -74,7 +74,7 @@ func (l *LevelDB) insertBlock(hash []byte, block string) error {
 		hash,
 		block,
 	)
-	fmt.Println("insert block", block, "with hash ", string(hash))
+	//fmt.Println("insert block", block, "with hash ", string(hash))
 	return err
 }
 
@@ -104,15 +104,19 @@ func (l *LevelDB) balance(address string, size uint64) (uint64, error) {
 }
 
 func (l *LevelDB) lastBlock() *Block {
-	var block Block
-	row := l.db.QueryRow("SELECT * FROM Blockchain ORDER BY Id DESC")
-	row.Scan(&block)
-	return &block
+	var bs string
+	row := l.db.QueryRow("SELECT Block FROM Blockchain ORDER BY Id DESC")
+	row.Scan(&bs)
+	block, err := DeserializeBlock(bs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return block
 }
 
 func (l *LevelDB) idByHash(hash []byte) (uint64, error) {
 	var idscan uint64
-	row := l.db.QueryRow("select id from Blockchain where Hash = $1", crypto.Base64Encode(hash))
+	row := l.db.QueryRow("select Id from Blockchain where Hash = $1", crypto.Base64Encode(hash))
 	err := row.Scan(&idscan)
 	if err != nil {
 		return 0, err
@@ -131,21 +135,17 @@ func (l *LevelDB) blockByHash(hash []byte) (*Block, error) {
 	return b, nil
 }
 
-func (l *LevelDB) getBlocks() ([]*Block, error) {
+func (l *LevelDB) getBlocks() ([]string, error) {
 	rows, err := l.db.Query("Select Block from Blockchain")
 	if err != nil {
 		return nil, err
 	}
-	blocks := make([]*Block, 0)
+	blocks := make([]string, 0)
 	var bs string
 	defer rows.Close()
 	for rows.Next() {
 		rows.Scan(&bs)
-		b, err := DeserializeBlock(bs)
-		if err != nil {
-			return nil, err
-		}
-		blocks = append(blocks, b)
+		blocks = append(blocks, bs)
 	}
 	return blocks, nil
 }

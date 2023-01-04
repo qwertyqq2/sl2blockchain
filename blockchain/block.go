@@ -30,7 +30,7 @@ const (
 	StorageValue  = 100
 	GenesisRevard = 100
 	StorageChain  = "StorageChain"
-	Difficulty    = 20
+	Difficulty    = 18
 	StorageReward = 1
 )
 
@@ -75,12 +75,16 @@ func NewBlock(miner string, prevhash []byte) *Block {
 }
 
 func (block *Block) Accept(bc *Blockchain, u *User, ch chan bool) error {
+	toMiner := uint64(0)
+	for _, tx := range block.Transactions {
+		toMiner += tx.ToStorage
+	}
 	block.InsertTx(bc, &Transaction{
 		RandBytes: GenerateRandom(),
 		PrevBlock: bc.LastBlock().CurHash,
 		Sender:    StorageChain,
 		Receiver:  u.Public(),
-		Value:     StorageReward, ///??? почему один SR
+		Value:     toMiner, ///??? почему один SR
 	})
 	if f, err := block.validTransactions(bc, bc.Size()); !f {
 		return err
@@ -170,13 +174,13 @@ func (block *Block) validId(bc *Blockchain, id uint64) bool {
 	return idscan == id
 }
 
+// Валидность т-ции проверяется после вставки в блок
 func (block *Block) InsertTx(bc *Blockchain, tx *Transaction) error {
 	if tx == nil {
 		return ErrNilTx
 	}
 	var balanceInChain uint64
 	balanceTx := tx.Value + tx.ToStorage
-	fmt.Println("balance tx", balanceTx)
 	if val, ok := block.Mapping[tx.Sender]; ok {
 		balanceInChain = val
 	} else {
@@ -186,7 +190,6 @@ func (block *Block) InsertTx(bc *Blockchain, tx *Transaction) error {
 		}
 		balanceInChain = bal
 	}
-	fmt.Println("balanceInchain", balanceInChain)
 	if balanceInChain < balanceTx {
 		return ErrNotEnoghtMoney
 	}
@@ -238,9 +241,13 @@ func (block *Block) validTransactions(bc *Blockchain, size uint64) (bool, error)
 			}
 		}
 	}
+	toMiner := uint64(0)
+	for _, tx := range block.Transactions {
+		toMiner += tx.ToStorage
+	}
 	for _, tx := range block.Transactions {
 		if tx.Sender == StorageChain {
-			if tx.Receiver != block.Miner || tx.Value != StorageReward {
+			if tx.Receiver != block.Miner || tx.Value != toMiner {
 				return false, ErrIncorrectStorageReceiver
 			}
 		} else {

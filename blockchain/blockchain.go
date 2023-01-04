@@ -59,6 +59,8 @@ func (bc *Blockchain) PrintBlockchain() {
 	}
 	fmt.Println("Blockchain:")
 	for _, b := range blocks {
-		b.Print()
+		fmt.Println("#####Block######")
+		fmt.Println(b)
+		fmt.Printf("\n\n\n")
 	}
 }
