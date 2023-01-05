@@ -9,17 +9,17 @@ type Blockchain struct {
 	levelDb *LevelDB
 }
 
-func NewBlockchain(filename, receiver string) error {
+func NewBlockchain(filename, receiver string) (*Block, error) {
 	l, err := NewLevelDb(filename)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	bc := &Blockchain{
 		levelDb: l,
 		index:   l.size(),
 	}
 	genesis := NewGenesisBlock(receiver)
-	return bc.InsertBlock(genesis)
+	return genesis, bc.InsertBlock(genesis)
 }
 
 func Load(filename string) (*Blockchain, error) {
