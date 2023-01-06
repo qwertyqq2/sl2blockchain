@@ -31,7 +31,7 @@ func NewClient(filename string) *Client {
 	if err != nil {
 		panic("cant write public")
 	}
-	addr := make([]string, 2)
+	addr := make([]string, 10)
 	data, err := readFile(neighborsFile)
 	if err != nil {
 		panic(err)
@@ -93,6 +93,7 @@ func (c *Client) Handle() error {
 					continue
 				}
 				fmt.Println(bal)
+			case "send":
 
 			default:
 				fmt.Println("undefined cmd")

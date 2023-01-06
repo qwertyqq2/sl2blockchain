@@ -22,6 +22,18 @@ func NewBlockchain(filename, receiver string) (*Block, error) {
 	return genesis, bc.InsertBlock(genesis)
 }
 
+func NewBlockchainWithGenesis(genesis *Block, filename, receiver string) (*Block, error) {
+	l, err := NewLevelDb(filename)
+	if err != nil {
+		return nil, err
+	}
+	bc := &Blockchain{
+		levelDb: l,
+		index:   l.size(),
+	}
+	return genesis, bc.InsertBlock(genesis)
+}
+
 func Load(filename string) (*Blockchain, error) {
 	bc, err := loadBlockchain(filename)
 	if err != nil {

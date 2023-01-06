@@ -3,6 +3,7 @@ package blockchain
 import (
 	"bytes"
 	"crypto/rsa"
+	"encoding/json"
 
 	"github.com/qwertyqq2/sl2blockchain/crypto"
 )
@@ -80,4 +81,21 @@ func (tx *Transaction) signIsValid() bool {
 		return false
 	}
 	return true
+}
+
+func SerializeTX(tx *Transaction) (string, error) {
+	jsonData, err := json.MarshalIndent(*tx, "", "\t")
+	if err != nil {
+		return "", err
+	}
+	return string(jsonData), nil
+}
+
+func DeserializeTX(data string) (*Transaction, error) {
+	var tx Transaction
+	err := json.Unmarshal([]byte(data), &tx)
+	if err != nil {
+		return nil, err
+	}
+	return &tx, nil
 }

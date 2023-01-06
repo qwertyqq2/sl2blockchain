@@ -7,7 +7,7 @@ import (
 
 	"github.com/qwertyqq2/sl2blockchain/blockchain"
 	"github.com/qwertyqq2/sl2blockchain/network"
-	"github.com/qwertyqq2/sl2blockchain/node/txpool"
+	"github.com/qwertyqq2/sl2blockchain/node/hub"
 )
 
 var (
@@ -15,21 +15,13 @@ var (
 	neighborsFile = "addr.json"
 )
 
-const (
-	OptAskBal   = 101
-	OptGetBal   = 102
-	OptNewBlock = 200
-)
-
 type Node struct {
 	user      *blockchain.User
 	neighbors map[string]bool
-	hub       chan *network.Package
-	txpool    *txpool.Pool
+	hub       *hub.Hub
 }
 
-func NewNode() *Node {
-	user := blockchain.NewUser()
+func NewNode(user *blockchain.User) *Node {
 	err := writeFile("node-params", user.Public())
 	if err != nil {
 		panic("cant write public")
@@ -50,8 +42,11 @@ func NewNode() *Node {
 	for _, a := range addr {
 		node.neighbors[a] = true //добавить пинг
 	}
-	node.hub = make(chan *network.Package, len(node.neighbors))
-	node.txpool = txpool.NewPool()
+	var addresses []string
+	for addr := range node.neighbors {
+		addresses = append(addresses, addr)
+	}
+	node.hub = hub.NewHub(addresses, dbname)
 	return node
 }
 
@@ -65,10 +60,10 @@ func (n *Node) NewChain() error {
 		return err
 	}
 	pkg := &network.Package{
-		Option: OptNewBlock,
+		Option: OptAddBlock,
 		Data:   genstr,
 	}
-	n.hub <- pkg
+	hub.InsertIntoHub(pkg, n.hub)
 	return nil
 }
 
@@ -86,33 +81,44 @@ func (n *Node) insertBlock(block *blockchain.Block) error {
 		return err
 	}
 	pkg := &network.Package{
-		Option: OptNewBlock,
+		Option: OptAddBlock,
 		Data:   blockstr,
 	}
-	n.hub <- pkg
+	hub.InsertIntoHub(pkg, n.hub)
 	return nil
 }
 
-func (n *Node) ListenHub(errChan chan error) {
-	for {
-		select {
-		case pack := <-n.hub:
-			for addr, ok := range n.neighbors {
-				if ok {
-					resp := network.Send(addr, pack)
-					if resp == nil {
-						errChan <- ErrNilPackageResp
-					}
-				}
-			}
-		}
+func (n *Node) CreateTx(receiver string, value uint64) error {
+	bc, err := blockchain.Load(dbname)
+	if err != nil {
+		return err
 	}
+	lasthash := bc.LastBlock().CurHash
+	tx, err := blockchain.NewTransaction(n.user, lasthash, receiver, value)
+	if err != nil {
+		return err
+	}
+	txser, err := blockchain.SerializeTX(tx)
+	if err != nil {
+		return err
+	}
+	pkg := &network.Package{
+		Option: OptNewTx,
+		Data:   txser,
+	}
+	hub.InsertIntoHub(pkg, n.hub)
+	return nil
 }
 
-func (n *Node) PoolCheck() {
+func (n *Node) HubCheck() {
+	errChan := make(chan error)
+	txChan := make(chan []*blockchain.Transaction, 3)
+	n.hub.ListenHub(errChan, txChan)
 	for {
-		txs, f := n.txpool.GetTxs()
-		if f {
+		select {
+		case err := <-errChan:
+			log.Fatal(err)
+		case txs := <-txChan:
 			bc, err := blockchain.Load(dbname)
 			if err != nil {
 				log.Fatal(err)
@@ -132,7 +138,6 @@ func (n *Node) PoolCheck() {
 			if err != nil {
 				log.Fatal(err)
 			}
-
 		}
 	}
 }
