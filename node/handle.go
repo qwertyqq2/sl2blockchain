@@ -3,6 +3,7 @@ package node
 import (
 	"github.com/qwertyqq2/sl2blockchain/blockchain"
 	"github.com/qwertyqq2/sl2blockchain/network"
+	"github.com/qwertyqq2/sl2blockchain/node/hub"
 )
 
 var (
@@ -13,19 +14,22 @@ var (
 	OptGetBalance   = 204
 	OptGetSizeChain = 205
 	OptNewTx        = 206
+	Success         = "success"
 )
 
 type Handle struct {
 	node *Node
 }
 
-func NewHandleNode() *Handle {
-	return &Handle{}
+func NewHandleNode(n *Node) *Handle {
+	return &Handle{
+		node: n,
+	}
 }
 
 func (h *Handle) handleServer(conn network.Conn, pack *network.Package) {
-	network.Handle(OptGenesisBlock, conn, pack, newChain)
-	network.Handle(OptAddBlock, conn, pack, addBlock)
+	network.Handle(OptGenesisBlock, conn, pack, h.newChain)
+	network.Handle(OptAddBlock, conn, pack, h.addBlock)
 	// network.Handle(OptGetBlock, conn, pack, getBlock)
 	// network.Handle(OptLastHash, conn, pack, getLastHash)
 	// network.Handle(OptGetBalance, conn, pack, getBalance)
@@ -36,35 +40,36 @@ func (h *Handle) Listen(addr string) {
 	network.Listen(addr, h.handleServer)
 }
 
-func newChain(pkg *network.Package) string {
+func (h *Handle) newChain(pkg *network.Package) string {
 	genesisstr := pkg.Data
 	block, err := blockchain.DeserializeBlock(genesisstr)
 	if err != nil {
-		return "incorrect block"
+		return err.Error()
 	}
-	_, err = blockchain.NewBlockchainWithGenesis(block, dbname, block.Miner)
+	_, err = blockchain.NewBlockchainWithGenesis(block, dbname+h.node.addr, block.Miner)
 	if err != nil {
-		return "some..."
+		return err.Error()
 	}
-	return "yes"
+	hub.InsertIntoHub(pkg, h.node.hub)
+	return Success
 }
 
-func addBlock(pkg *network.Package) string {
+func (h *Handle) addBlock(pkg *network.Package) string {
 	blockstr := pkg.Data
 	block, err := blockchain.DeserializeBlock(blockstr)
 	if err != nil {
-		return "incorrectBlock"
+		return err.Error()
 	}
-	bc, err := blockchain.Load(dbname)
+	bc, err := blockchain.Load(dbname + h.node.addr)
 	if err != nil {
-		return "notBlockchain"
+		return err.Error()
 	}
 	if !block.IsValid(bc) {
-		return "notValid"
+		return err.Error()
 	}
 	err = bc.InsertBlock(block)
 	if err != nil {
-		return "cantInsertBlock"
+		return err.Error()
 	}
-	return "yes"
+	return Success
 }

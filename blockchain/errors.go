@@ -7,10 +7,10 @@ var (
 	ErrNilTx                    = errors.New("nil tx")
 	ErrStorageRewardPass        = errors.New("storage reward pass")
 	ErrNotEnoghtMoney           = errors.New("not enought mney")
-	ErrNilBlock                 = errors.New("Nil block")
-	ErrEqualRandBytes           = errors.New("Equal rand bytes")
-	ErrSecondStorageSender      = errors.New("May be only one storage sender")
-	ErrIncorrectStorageReceiver = errors.New("Incorrect storage receiver")
+	ErrNilBlock                 = errors.New("nil block")
+	ErrEqualRandBytes           = errors.New("equal rand bytes")
+	ErrSecondStorageSender      = errors.New("may be only one storage sender")
+	ErrIncorrectStorageReceiver = errors.New("incorrect storage receiver")
 
 	ErrTxHash            = errors.New("not valid hash tx")
 	ErrTxSign            = errors.New("not valid sign tx")
@@ -22,5 +22,10 @@ var (
 	ErrIncorrectBalanceBlock = errors.New("incorrect balance block")
 	ErrIncorrectTimeBlock    = errors.New("incorrect time block")
 
-	ErrNotProof = errors.New("Not proof")
+	ErrNotProof = errors.New("not proof")
+
+	ErrChainAlreadyExist = errors.New("chain already exist")
+
+	ErrNotFileExist = errors.New("not file exist")
+	ErrNotRows      = errors.New("not rows")
 )

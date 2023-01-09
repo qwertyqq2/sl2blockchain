@@ -10,13 +10,15 @@ type Hub struct {
 	hub       chan *network.Package
 	pool      *txpool.Pool
 	addresses []string
+	addrnode  string
 }
 
-func NewHub(addresses []string, dbname string) *Hub {
+func NewHub(addresses []string, dbname, addr string) *Hub {
 	return &Hub{
 		addresses: addresses,
 		hub:       make(chan *network.Package, len(addresses)),
 		pool:      txpool.NewPool(),
+		addrnode:  addr,
 	}
 }
 
@@ -29,11 +31,13 @@ func (h *Hub) serveNeighbors(errChan chan error) {
 		select {
 		case pack := <-h.hub:
 			for _, addr := range h.addresses {
-				resp := network.Send(addr, pack)
-				if resp == nil {
-					errChan <- ErrNilPackageResp
+				if addr != h.addrnode {
+					resp := network.Send("0.0.0.0"+addr, pack)
+					if resp == nil {
+						errChan <- ErrNilPackageResp
+					}
+					//fmt.Println("resp", resp.Option, resp.Data)
 				}
-
 			}
 		}
 	}

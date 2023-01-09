@@ -65,14 +65,13 @@ func ProowOfWork(blockHash []byte, diff uint8, ch chan bool) (uint64, bool) {
 				[]byte{},
 			))
 			intHash.SetBytes(hash)
-			fmt.Printf("\rproof: %d", intHash)
 			if intHash.Cmp(Target) == -1 {
 				return nonce, true
 			}
 			nonce += 1
 		}
 	}
-	fmt.Printf("\n\n")
+	fmt.Println()
 	return nonce, true
 }
 
@@ -104,6 +103,10 @@ func GeneratePrivate(bits uint) *rsa.PrivateKey {
 
 func StringPublic(pub *rsa.PublicKey) string {
 	return Base64Encode(x509.MarshalPKCS1PublicKey(pub))
+}
+
+func StringPrivate(pk *rsa.PrivateKey) string {
+	return Base64Encode(x509.MarshalPKCS1PrivateKey(pk))
 }
 
 func Base64Encode(data []byte) string {

@@ -13,10 +13,10 @@ type Package struct {
 }
 
 const (
-	ENDBYTES = "\0005\0000\0001"
-	WAITTAIM = 10
-	BUFSIZE  = 4 << 10
-	MAXSIZE  = 2 << 20
+	EndBytes = "\0005\0000\0001"
+	Waitime  = 10
+	BufSize  = 4 << 10
+	MaxSize  = 2 << 20
 )
 
 type Listener net.Listener
@@ -54,13 +54,14 @@ func handleConn(conn net.Conn, handle func(Conn, *Package)) {
 		log.Println(ErrNotPack)
 		return
 	}
+	//fmt.Println("req", time.Now(), pack.Option, pack.Data)
 	handle(Conn(conn), pack)
 }
 
 func readPack(conn net.Conn) *Package {
 	var (
 		size = uint64(0)
-		buf  = make([]byte, BUFSIZE)
+		buf  = make([]byte, BufSize)
 		data string
 	)
 	for {
@@ -70,13 +71,13 @@ func readPack(conn net.Conn) *Package {
 			return nil
 		}
 		size += uint64(length)
-		if size > MAXSIZE {
+		if size > MaxSize {
 			log.Println(err)
 			return nil
 		}
 		data += string(buf[:length])
-		if strings.Contains(data, ENDBYTES) {
-			data = strings.Split(data, ENDBYTES)[0]
+		if strings.Contains(data, EndBytes) {
+			data = strings.Split(data, EndBytes)[0]
 			break
 		}
 	}
@@ -100,7 +101,7 @@ func Send(address string, pack *Package) *Package {
 		log.Println(err)
 		return nil
 	}
-	_, err = conn.Write([]byte(serilizePack + ENDBYTES))
+	_, err = conn.Write([]byte(serilizePack + EndBytes))
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -116,7 +117,7 @@ func Send(address string, pack *Package) *Package {
 	select {
 	case <-ch:
 
-	case <-time.After(WAITTAIM * time.Second):
+	case <-time.After(Waitime * time.Second):
 		log.Println(ErrTimeWait)
 		return nil
 	}
@@ -134,6 +135,6 @@ func Handle(option int, conn Conn, pack *Package, handle func(*Package) string) 
 	if err != nil {
 		return err
 	}
-	_, err = conn.Write([]byte(serializePack + ENDBYTES))
+	_, err = conn.Write([]byte(serializePack + EndBytes))
 	return err
 }

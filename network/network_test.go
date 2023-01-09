@@ -9,12 +9,12 @@ import (
 )
 
 const (
-	TO_UPPER = 1
-	ADDRESS1 = ":8090"
+	ToUpper = 1
+	addr    = ":8090"
 )
 
 func handleServer(conn Conn, pack *Package) {
-	err := Handle(TO_UPPER, conn, pack, handleToUpper)
+	err := Handle(ToUpper, conn, pack, handleToUpper)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -25,14 +25,14 @@ func handleToUpper(pack *Package) string {
 }
 
 func TestSend(t *testing.T) {
-	_, err := Listen(ADDRESS1, handleServer)
+	_, err := Listen(addr, handleServer)
 	if err != nil {
 		fmt.Println(err)
 	}
 	time.Sleep(1000 * time.Millisecond)
 
-	res := Send(ADDRESS1, &Package{
-		Option: TO_UPPER,
+	res := Send(addr, &Package{
+		Option: ToUpper,
 		Data:   "Hello world",
 	})
 	if err != nil {

@@ -22,7 +22,15 @@ func NewBlockchain(filename, receiver string) (*Block, error) {
 	return genesis, bc.InsertBlock(genesis)
 }
 
+func chainExist(filename string) (bool, error) {
+	return existLevel(filename)
+}
+
 func NewBlockchainWithGenesis(genesis *Block, filename, receiver string) (*Block, error) {
+	f, err := chainExist(filename)
+	if f {
+		return nil, ErrChainAlreadyExist
+	}
 	l, err := NewLevelDb(filename)
 	if err != nil {
 		return nil, err

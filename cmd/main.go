@@ -1,9 +1,10 @@
-package cmd
+package main
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/qwertyqq2/sl2blockchain/blockchain"
@@ -23,18 +24,22 @@ func init() {
 	switch arg {
 	case "newnode":
 		user := blockchain.NewUser()
-		n = node.NewNode(user)
 		addr = os.Args[2]
+		n = node.NewNode(user, addr)
 	case "loadnode":
-		user := blockchain.ParseUser("qwe") /////parsing
-		n = node.NewNode(user)
 		addr = os.Args[2]
+		n_, err := node.LoadNode(addr)
+		if err != nil {
+			panic(err)
+		}
+		n = n_
+		fmt.Println("pubkey: ", n.Public())
 	}
 }
 
 func main() {
 	go n.HubCheck()
-	handle := node.NewHandleNode()
+	handle := node.NewHandleNode(n)
 	go handle.Listen(addr)
 	for {
 		msgn := input()
@@ -45,14 +50,27 @@ func main() {
 			err := n.NewChain()
 			if err != nil {
 				fmt.Println(err)
-				continue
 			}
+		case "newb":
+			receiver := splited[1]
+			val, err := strconv.ParseUint(splited[2], 10, 64)
+			err = n.NewBlockTesting(receiver, val)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "printbc":
+			err := n.PrintBc()
+			if err != nil {
+				fmt.Println(err)
+			}
+		default:
+			fmt.Println("undefined")
 		}
 	}
 }
 
 func input() string {
-	fmt.Print("->")
+	fmt.Printf("->")
 	msg, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	if err != nil {
 		panic("error reader")

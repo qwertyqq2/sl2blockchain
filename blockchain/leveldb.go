@@ -2,16 +2,13 @@ package blockchain
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/qwertyqq2/sl2blockchain/crypto"
 
 	_ "github.com/mattn/go-sqlite3"
-)
-
-const (
-	dbname = "sl2"
 )
 
 type LevelDB struct {
@@ -41,6 +38,21 @@ func NewLevelDb(filename string) (*LevelDB, error) {
 	return &LevelDB{
 		db: db,
 	}, nil
+}
+
+func existLevel(filename string) (bool, error) {
+	db, err := sql.Open("sqlite3", filename)
+	if err != nil {
+		return false, ErrNotFileExist
+	}
+	query := fmt.Sprintf("SELECT Block FROM Blockchain")
+	row := db.QueryRow(query)
+	var tmp interface{}
+	err = row.Scan(&tmp)
+	if tmp == nil {
+		return false, ErrNotRows
+	}
+	return true, nil
 }
 
 func loadLevel(db *sql.DB) *LevelDB {
@@ -74,7 +86,6 @@ func (l *LevelDB) insertBlock(hash []byte, block string) error {
 		hash,
 		block,
 	)
-	//fmt.Println("insert block", block, "with hash ", string(hash))
 	return err
 }
 
@@ -106,7 +117,10 @@ func (l *LevelDB) balance(address string, size uint64) (uint64, error) {
 func (l *LevelDB) lastBlock() *Block {
 	var bs string
 	row := l.db.QueryRow("SELECT Block FROM Blockchain ORDER BY Id DESC")
-	row.Scan(&bs)
+	err := row.Scan(&bs)
+	if err != nil {
+		fmt.Println(err)
+	}
 	block, err := DeserializeBlock(bs)
 	if err != nil {
 		log.Fatal(err)
@@ -126,12 +140,18 @@ func (l *LevelDB) idByHash(hash []byte) (uint64, error) {
 
 func (l *LevelDB) blockByHash(hash []byte) (*Block, error) {
 	var pBlock string
+	//t := new(interface{})
 	row := l.db.QueryRow("Select Block from Blockchain where Hash=$1", hash)
-	row.Scan(pBlock)
+	err := row.Scan(&pBlock)
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Println("DataCode", pBlock)
 	b, err := DeserializeBlock(pBlock)
 	if err != nil {
 		return nil, err
 	}
+	//fmt.Println("DataDecode", pBlock)
 	return b, nil
 }
 

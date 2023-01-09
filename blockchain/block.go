@@ -30,7 +30,7 @@ const (
 	StorageValue  = 100
 	GenesisRevard = 100
 	StorageChain  = "StorageChain"
-	Difficulty    = 18
+	Difficulty    = 10
 	StorageReward = 1
 )
 
@@ -84,7 +84,7 @@ func (block *Block) Accept(bc *Blockchain, u *User, ch chan bool) error {
 		PrevBlock: bc.LastBlock().CurHash,
 		Sender:    StorageChain,
 		Receiver:  u.Public(),
-		Value:     toMiner, ///??? почему один SR
+		Value:     toMiner,
 	})
 	if f, err := block.validTransactions(bc, bc.Size()); !f {
 		return err
@@ -215,6 +215,7 @@ func (block *Block) addBalance(bc *Blockchain, receiver string, value uint64) er
 	return nil
 }
 
+// ErrIncorrectBalanceBlock
 func (block *Block) validTransactions(bc *Blockchain, size uint64) (bool, error) {
 	lenBlock := len(block.Transactions)
 	inStorage := false
@@ -378,18 +379,25 @@ func (block *Block) validTime(bc *Blockchain) bool {
 func (block *Block) IsValid(bc *Blockchain) bool {
 	switch {
 	case block == nil:
+		fmt.Println("block is nil")
 		return false
 	case block.Difficulty != Difficulty:
+		fmt.Println("diff not eq")
 		return false
 	case !block.validHash():
+		fmt.Println("hash is invalid")
 		return false
 	case !block.validTx(bc, bc.Size()):
+		fmt.Println("invalid tx")
 		return false
 	case !block.validSign():
+		fmt.Println("invalid sign")
 		return false
 	case !block.validProof():
+		fmt.Println("invalid proof")
 		return false
 	case !block.validTime(bc):
+		fmt.Println("invalid time")
 		return false
 	}
 	return true
