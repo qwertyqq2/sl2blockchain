@@ -9,12 +9,14 @@ import (
 var (
 	OptGenesisBlock = 200
 	OptAddBlock     = 201
-	OptGetBlock     = 202
+	OptGetBlocks    = 202
 	OptLastHash     = 203
 	OptGetBalance   = 204
 	OptGetSizeChain = 205
 	OptNewTx        = 206
 	Success         = "success"
+	Wait            = "wait"
+	Pending         = "pending"
 )
 
 type Handle struct {
@@ -30,7 +32,9 @@ func NewHandleNode(n *Node) *Handle {
 func (h *Handle) handleServer(conn network.Conn, pack *network.Package) {
 	network.Handle(OptGenesisBlock, conn, pack, h.newChain)
 	network.Handle(OptAddBlock, conn, pack, h.addBlock)
-	// network.Handle(OptGetBlock, conn, pack, getBlock)
+	network.Handle(OptNewTx, conn, pack, h.newTx)
+	network.Handle(OptGetBlocks, conn, pack, h.getBlocksFromHash)
+	//network.Handle(OptGetBlock, conn, pack, h.getBlock)
 	// network.Handle(OptLastHash, conn, pack, getLastHash)
 	// network.Handle(OptGetBalance, conn, pack, getBalance)
 	// network.Handle(OptGetSizeChain, conn, pack, getChainSize)
@@ -64,12 +68,37 @@ func (h *Handle) addBlock(pkg *network.Package) string {
 	if err != nil {
 		return err.Error()
 	}
-	if !block.IsValid(bc) {
-		return err.Error()
-	}
-	err = bc.InsertBlock(block)
+	err = h.node.AddBlock(block, bc)
 	if err != nil {
 		return err.Error()
 	}
 	return Success
+}
+
+func (h *Handle) newTx(pkg *network.Package) string {
+	txstr := pkg.Data
+	tx, err := blockchain.DeserializeTX(txstr)
+	if err != nil {
+		return err.Error()
+	}
+	hub.InsertIntoPool(tx, h.node.hub)
+	return Pending
+}
+
+func (h *Handle) getBlocksFromHash(pkg *network.Package) string {
+	hash := []byte(pkg.Data)
+	bc, err := blockchain.Load(dbname + h.node.addr)
+	if err != nil {
+		return err.Error()
+	}
+	blocks, err := bc.GetBlocksFromHash(hash)
+	if err != nil {
+		return err.Error()
+	}
+	blocksStr, err := blockchain.SerializeBlocks(blocks)
+	if err != nil {
+		return err.Error()
+	}
+	return blocksStr
+
 }

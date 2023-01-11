@@ -77,7 +77,6 @@ func (l *LevelDB) size() uint64 {
 	var index uint64
 	row := l.db.QueryRow("SELECT Id FROM Blockchain ORDER BY Id DESC")
 	row.Scan(&index)
-	//fmt.Println("size", index)
 	return index
 }
 
@@ -140,19 +139,58 @@ func (l *LevelDB) idByHash(hash []byte) (uint64, error) {
 
 func (l *LevelDB) blockByHash(hash []byte) (*Block, error) {
 	var pBlock string
-	//t := new(interface{})
 	row := l.db.QueryRow("Select Block from Blockchain where Hash=$1", hash)
 	err := row.Scan(&pBlock)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("DataCode", pBlock)
 	b, err := DeserializeBlock(pBlock)
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println("DataDecode", pBlock)
 	return b, nil
+}
+
+func (l *LevelDB) blockById(id uint64) (*Block, error) {
+	var pBlock string
+	row := l.db.QueryRow("Select Block from Blockchain where Id=$1", id)
+	err := row.Scan(&pBlock)
+	if err != nil {
+		return nil, err
+	}
+	b, err := DeserializeBlock(pBlock)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (l *LevelDB) getBlocksFromHash(hash []byte) ([]*Block, error) {
+	idx, err := l.idByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+	curId := l.size()
+	blocks := make([]*Block, 0)
+	for i := idx; i <= curId; i++ {
+		b, err := l.blockById(i)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, b)
+	}
+	return blocks, nil
+}
+
+func (l *LevelDB) getBlockAfter(hash []byte) (*Block, error) {
+	idx, err := l.idByHash(hash)
+	if err != nil {
+		return nil, err
+	}
+	if idx == l.size() {
+		return nil, ErrIsLastBlock
+	}
+	return l.blockById(idx + 1)
 }
 
 func (l *LevelDB) getBlocks() ([]string, error) {

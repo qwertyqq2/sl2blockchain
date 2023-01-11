@@ -1,6 +1,8 @@
 package txpool
 
-import "github.com/qwertyqq2/sl2blockchain/blockchain"
+import (
+	"github.com/qwertyqq2/sl2blockchain/blockchain"
+)
 
 type Pool struct {
 	txs []*blockchain.Transaction
@@ -23,10 +25,10 @@ func (p *Pool) put() *blockchain.Transaction {
 	return tx
 }
 
-func (p *Pool) GetTxs() ([]*blockchain.Transaction, bool) {
+func (p *Pool) GetTxs(maxtx uint) ([]*blockchain.Transaction, bool) {
 	txs := make([]*blockchain.Transaction, 0)
-	if len(p.txs) > 3 {
-		for i := 0; i < 3; i++ {
+	if len(p.txs) > int(maxtx) {
+		for i := 0; i < int(maxtx); i++ {
 			txs = append(txs, p.put())
 		}
 		return txs, true

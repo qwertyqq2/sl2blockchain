@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -23,8 +24,9 @@ type Node struct {
 	addr      string
 }
 
-//	1)Добавить loadNode
-//	2)Добавить отправка соседям полученного пакета
+const (
+	MaxTx = 2
+)
 
 func NewNode(user *blockchain.User, addr string) *Node {
 	pkstr := crypto.StringPrivate(user.Private())
@@ -148,6 +150,28 @@ func (n *Node) NewBlockTesting(receiver string, val uint64) error {
 	return nil
 }
 
+func (n *Node) AddBlock(block *blockchain.Block, bc *blockchain.Blockchain) error {
+	if err := block.IsValid(bc); err != nil {
+		if !bytes.Equal(block.PrevHash, bc.LastBlock().CurHash) {
+			if bc.BlockInChain(block) {
+				return ErrBlockAlreadyExist
+			}
+			pkg := &network.Package{
+				Option: OptGetBlocks,
+				Data:   string(bc.LastBlock().CurHash),
+			}
+			hub.InsertIntoHub(pkg, n.hub)
+			return nil
+		}
+		return err
+	}
+	err := n.insertBlock(block, bc)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func (n *Node) insertBlock(block *blockchain.Block, bc *blockchain.Blockchain) error {
 	err := bc.InsertBlock(block)
 	if err != nil {
@@ -188,35 +212,74 @@ func (n *Node) CreateTx(receiver string, value uint64) error {
 }
 
 func (n *Node) HubCheck() {
-	errChan := make(chan error)
-	txChan := make(chan []*blockchain.Transaction, 3)
-	n.hub.ListenHub(errChan, txChan)
+	errChan := make(chan error, 5)
+	txChan := make(chan []*blockchain.Transaction, MaxTx)
+	n.hub.ListenHub(errChan, txChan, MaxTx)
 	for {
 		select {
 		case err := <-errChan:
-			log.Fatal(err)
+			log.Println(err)
 		case txs := <-txChan:
-			bc, err := blockchain.Load(dbname + n.addr)
-			if err != nil {
-				log.Fatal(err)
-			}
-			block := blockchain.NewBlock(n.user.Public(), bc.LastBlock().CurHash)
-			for _, tx := range txs {
-				err := block.InsertTx(bc, tx)
+			go func() {
+				bc, err := blockchain.Load(dbname + n.addr)
 				if err != nil {
 					log.Fatal(err)
 				}
+				block := blockchain.NewBlock(n.user.Public(), bc.LastBlock().CurHash)
+				for _, tx := range txs {
+					err := block.InsertTx(bc, tx)
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+				err = block.Accept(bc, n.user, nil)
+				if err != nil {
+					log.Fatal(err)
+				}
+				err = n.insertBlock(block, bc)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}()
+		case pkg := <-n.hub.PendingResp:
+			go func() {
+				err := handlePendingPack(pkg, n)
+				if err != nil {
+					errChan <- err
+				}
+			}()
+		}
+	}
+}
+
+func handlePendingPack(pkg *network.Package, n *Node) error {
+	switch pkg.Option {
+	case OptGetBlocks:
+		blocks, err := blockchain.DeserializeBlocks(pkg.Data)
+		if err != nil {
+			return err
+		}
+		bc, err := blockchain.Load(dbname + n.addr)
+		if err != nil {
+			return err
+		}
+		beginHash := blocks[0].PrevHash //Начинаются с первого?
+		if !bytes.Equal(beginHash, bc.LastBlock().CurHash) {
+			return err
+		}
+		for _, b := range blocks {
+			if err := b.IsValid(bc); err != nil {
+				return ErrNotValidBlock
 			}
-			err = block.Accept(bc, n.user, nil)
+		}
+		for _, b := range blocks {
+			err = n.insertBlock(b, bc)
 			if err != nil {
-				log.Fatal(err)
-			}
-			err = n.insertBlock(block, bc)
-			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
 	}
+	return nil
 }
 
 func writeFile(filename string, data string) error {

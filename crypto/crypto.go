@@ -51,7 +51,7 @@ func ProowOfWork(blockHash []byte, diff uint8, ch chan bool) (uint64, bool) {
 		hash    []byte
 	)
 	Target.Lsh(Target, 256-uint(diff))
-	fmt.Println("\n\nStart mining")
+	fmt.Println("mining...")
 	for nonce < math.MaxUint64 {
 		select {
 		case <-ch:

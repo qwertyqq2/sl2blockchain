@@ -11,6 +11,12 @@ var (
 	ErrEqualRandBytes           = errors.New("equal rand bytes")
 	ErrSecondStorageSender      = errors.New("may be only one storage sender")
 	ErrIncorrectStorageReceiver = errors.New("incorrect storage receiver")
+	ErrIncorrectDiff            = errors.New("incorrect difficalty")
+	ErrIncorrectHash            = errors.New("incorrect hash")
+	ErrIncorrectTrasnactions    = errors.New("incorrect transactions")
+	ErrIncorrectSign            = errors.New("incorrect sign")
+	ErrIncorrectProof           = errors.New("incorrect proof")
+	ErrIncorrectTime            = errors.New("incorrect time")
 
 	ErrTxHash            = errors.New("not valid hash tx")
 	ErrTxSign            = errors.New("not valid sign tx")
@@ -28,4 +34,5 @@ var (
 
 	ErrNotFileExist = errors.New("not file exist")
 	ErrNotRows      = errors.New("not rows")
+	ErrIsLastBlock  = errors.New("is last block")
 )

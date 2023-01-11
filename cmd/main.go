@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -52,9 +53,27 @@ func main() {
 				fmt.Println(err)
 			}
 		case "newb":
+			if len(splited) < 2 {
+				fmt.Println("not enouhg args")
+				continue
+			}
 			receiver := splited[1]
 			val, err := strconv.ParseUint(splited[2], 10, 64)
 			err = n.NewBlockTesting(receiver, val)
+			if err != nil {
+				fmt.Println(err)
+			}
+		case "ctx":
+			if len(splited) < 2 {
+				fmt.Println("not enouhg args")
+				continue
+			}
+			receiver := splited[1]
+			val, err := strconv.ParseUint(splited[2], 10, 64)
+			if err != nil {
+				log.Println(err)
+			}
+			err = n.CreateTx(receiver, val)
 			if err != nil {
 				fmt.Println(err)
 			}

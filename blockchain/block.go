@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/big"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/qwertyqq2/sl2blockchain/crypto"
@@ -32,6 +33,7 @@ const (
 	StorageChain  = "StorageChain"
 	Difficulty    = 10
 	StorageReward = 1
+	Separator     = "__A__"
 )
 
 func SerializeBlock(block *Block) (string, error) {
@@ -49,6 +51,31 @@ func DeserializeBlock(data string) (*Block, error) {
 		return nil, err
 	}
 	return &block, nil
+}
+
+func SerializeBlocks(blocks []*Block) (string, error) {
+	res := ""
+	for _, b := range blocks {
+		bstr, err := SerializeBlock(b)
+		if err != nil {
+			return "", err
+		}
+		res += bstr + Separator
+	}
+	return res, nil
+}
+
+func DeserializeBlocks(blocksstr string) ([]*Block, error) {
+	blocksSplit := strings.Split(blocksstr, Separator)
+	blocks := make([]*Block, 0)
+	for _, bstr := range blocksSplit {
+		b, err := DeserializeBlock(bstr)
+		if err != nil {
+			return nil, err
+		}
+		blocks = append(blocks, b)
+	}
+	return blocks, nil
 }
 
 func NewGenesisBlock(receiver string) *Block {
@@ -376,31 +403,24 @@ func (block *Block) validTime(bc *Blockchain) bool {
 	return f
 }
 
-func (block *Block) IsValid(bc *Blockchain) bool {
+func (block *Block) IsValid(bc *Blockchain) error {
 	switch {
 	case block == nil:
-		fmt.Println("block is nil")
-		return false
+		return ErrNilBlock
 	case block.Difficulty != Difficulty:
-		fmt.Println("diff not eq")
-		return false
+		return ErrIncorrectDiff
 	case !block.validHash():
-		fmt.Println("hash is invalid")
-		return false
+		return ErrIncorrectHash
 	case !block.validTx(bc, bc.Size()):
-		fmt.Println("invalid tx")
-		return false
+		return ErrIncorrectTrasnactions
 	case !block.validSign():
-		fmt.Println("invalid sign")
-		return false
+		return ErrIncorrectSign
 	case !block.validProof():
-		fmt.Println("invalid proof")
-		return false
+		return ErrIncorrectProof
 	case !block.validTime(bc):
-		fmt.Println("invalid time")
-		return false
+		return ErrIncorrectTime
 	}
-	return true
+	return nil
 }
 
 func (block *Block) Print() {

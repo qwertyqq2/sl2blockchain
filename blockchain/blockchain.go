@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -70,6 +71,30 @@ func (bc *Blockchain) Balance(address string, size uint64) (uint64, error) {
 
 func (bc *Blockchain) LastBlock() *Block {
 	return bc.levelDb.lastBlock()
+}
+
+func (bc *Blockchain) BlockInChain(block *Block) bool {
+	hash := block.PrevHash
+	blockcopy, err := bc.levelDb.blockByHash(hash)
+	if err != nil {
+		return false
+	}
+	if blockcopy == nil {
+		return false
+	}
+	if blockcopy.Timestamp == block.Timestamp &&
+		block.Nonce == blockcopy.Nonce && bytes.Equal(block.CurHash, blockcopy.CurHash) {
+		return true
+	}
+	return false
+}
+
+func (bc *Blockchain) GetBlocksFromHash(hash []byte) ([]*Block, error) {
+	return bc.levelDb.getBlocksFromHash(hash)
+}
+
+func (bc *Blockchain) GetBlockAfter(hash []byte) (*Block, error) {
+	return bc.levelDb.getBlockAfter(hash)
 }
 
 func (bc *Blockchain) PrintBlockchain() {
