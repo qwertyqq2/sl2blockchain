@@ -15,7 +15,8 @@ cd sl2blockchain
 
 #### cmd
 
-
+```
 newchain -- создать блокчейн.
 ctx -a -v  -- создать транзакцию.
 
+```
