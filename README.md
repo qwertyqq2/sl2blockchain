@@ -11,6 +11,8 @@ cd sl2blockchain
 
 ./main newnode :8080
 
+```
+
 #### cmd
 
 
