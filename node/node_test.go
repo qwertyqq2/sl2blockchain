@@ -1,7 +1,22 @@
 package node
 
-import "testing"
+import (
+	"bytes"
+	"fmt"
+	"testing"
 
-func TestCreateNode(t *testing.T) {
+	"github.com/qwertyqq2/sl2blockchain/crypto"
+)
 
+func TestBytesToString(t *testing.T) {
+	hash := crypto.HashSum(
+		bytes.Join(
+			[][]byte{
+				[]byte("adqd"),
+			},
+			[]byte{},
+		))
+	encdeHash := crypto.Base64Encode(hash)
+	res := crypto.Base64Decode(encdeHash)
+	fmt.Println(bytes.Equal(res, hash))
 }

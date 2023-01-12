@@ -31,7 +31,7 @@ const (
 	StorageValue  = 100
 	GenesisRevard = 100
 	StorageChain  = "StorageChain"
-	Difficulty    = 10
+	Difficulty    = 20
 	StorageReward = 1
 	Separator     = "__A__"
 )
@@ -67,6 +67,7 @@ func SerializeBlocks(blocks []*Block) (string, error) {
 
 func DeserializeBlocks(blocksstr string) ([]*Block, error) {
 	blocksSplit := strings.Split(blocksstr, Separator)
+	blocksSplit = blocksSplit[:len(blocksSplit)-1]
 	blocks := make([]*Block, 0)
 	for _, bstr := range blocksSplit {
 		b, err := DeserializeBlock(bstr)
@@ -182,7 +183,6 @@ func (block *Block) proof(ch chan bool) (uint64, error) {
 func (block *Block) signature(pk *rsa.PrivateKey) []byte {
 	s, err := crypto.Sign(pk, block.CurHash)
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 	return s
@@ -193,9 +193,8 @@ func (block *Block) validHash() bool {
 }
 
 func (block *Block) validId(bc *Blockchain, id uint64) bool {
-	idscan, err := bc.levelDb.idByHash(Base64Encode(block.PrevHash))
+	idscan, err := bc.levelDb.idByHash(block.PrevHash)
 	if err != nil {
-		log.Println(err)
 		return false
 	}
 	return idscan == id
@@ -295,9 +294,8 @@ func (block *Block) validTransactions(bc *Blockchain, size uint64) (bool, error)
 }
 
 func (block *Block) validTx(bc *Blockchain, size uint64) bool {
-	f, err := block.validTransactions(bc, size)
+	f, _ := block.validTransactions(bc, size)
 	if !f {
-		log.Println(err)
 		return false
 	}
 	return f
@@ -381,7 +379,7 @@ func (block *Block) validTimestamp(bc *Blockchain) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	b, err := bc.levelDb.blockByHash(Base64Encode(block.PrevHash))
+	b, err := bc.levelDb.blockByHash(block.PrevHash)
 	if b == nil {
 		return false, ErrNilBlock
 	}

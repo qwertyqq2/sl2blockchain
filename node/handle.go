@@ -1,7 +1,10 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/qwertyqq2/sl2blockchain/blockchain"
+	"github.com/qwertyqq2/sl2blockchain/crypto"
 	"github.com/qwertyqq2/sl2blockchain/network"
 	"github.com/qwertyqq2/sl2blockchain/node/hub"
 )
@@ -57,7 +60,6 @@ func (h *Handle) newChain(pkg *network.Package) string {
 	hub.InsertIntoHub(pkg, h.node.hub)
 	return Success
 }
-
 func (h *Handle) addBlock(pkg *network.Package) string {
 	blockstr := pkg.Data
 	block, err := blockchain.DeserializeBlock(blockstr)
@@ -86,13 +88,14 @@ func (h *Handle) newTx(pkg *network.Package) string {
 }
 
 func (h *Handle) getBlocksFromHash(pkg *network.Package) string {
-	hash := []byte(pkg.Data)
+	hash := crypto.Base64Decode(pkg.Data)
 	bc, err := blockchain.Load(dbname + h.node.addr)
 	if err != nil {
 		return err.Error()
 	}
 	blocks, err := bc.GetBlocksFromHash(hash)
 	if err != nil {
+		fmt.Println(err)
 		return err.Error()
 	}
 	blocksStr, err := blockchain.SerializeBlocks(blocks)

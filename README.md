@@ -1,3 +1,4 @@
+
 # sl2blockchain
 
 
@@ -5,18 +6,26 @@
 
 ### Запуск
 
-``` 
+---
+```
 git clone https://github.com/qwertyqq2/sl2blockchain
 cd sl2blockchain
 
 ./main newnode :8080
 
 ```
+---
 
 #### cmd
 
+---
 ```
 newchain -- создать блокчейн.
+
 ctx -a -v  -- создать транзакцию.
+a -- публичный ключ получателя, v -- значение
+
+printbc -- вывести блокчейн
 
 ```
+---

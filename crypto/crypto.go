@@ -35,6 +35,10 @@ func ParsePrivate(privData string) *rsa.PrivateKey {
 	return pub
 }
 
+func Base64Encode(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data)
+}
+
 func Base64Decode(data string) []byte {
 	result, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
@@ -107,10 +111,6 @@ func StringPublic(pub *rsa.PublicKey) string {
 
 func StringPrivate(pk *rsa.PrivateKey) string {
 	return Base64Encode(x509.MarshalPKCS1PrivateKey(pk))
-}
-
-func Base64Encode(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data)
 }
 
 func ParsePublic(pubData string) *rsa.PublicKey {

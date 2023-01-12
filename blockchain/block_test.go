@@ -12,3 +12,22 @@ func TestBlockEncode(t *testing.T) {
 	}
 	t.Log(string(serblock))
 }
+
+func TestSerializeBlocks(t *testing.T) {
+	block1 := &Block{
+		CurHash: GenerateRandom(),
+	}
+	block2 := &Block{
+		CurHash: GenerateRandom(),
+	}
+	blocks := []*Block{block1, block2}
+	blocksStr, err := SerializeBlocks(blocks)
+	if err != nil {
+		t.Log(err)
+	}
+	blockcopy, err := DeserializeBlocks(blocksStr)
+	if err != nil {
+		t.Log(err)
+	}
+	t.Log(blockcopy)
+}

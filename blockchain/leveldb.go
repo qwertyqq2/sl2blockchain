@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/qwertyqq2/sl2blockchain/crypto"
-
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -82,7 +80,7 @@ func (l *LevelDB) size() uint64 {
 
 func (l *LevelDB) insertBlock(hash []byte, block string) error {
 	_, err := l.db.Exec("INSERT INTO Blockchain (Hash, Block) VALUES ($1, $2)",
-		hash,
+		Base64Encode(hash),
 		block,
 	)
 	return err
@@ -129,7 +127,7 @@ func (l *LevelDB) lastBlock() *Block {
 
 func (l *LevelDB) idByHash(hash []byte) (uint64, error) {
 	var idscan uint64
-	row := l.db.QueryRow("select Id from Blockchain where Hash = $1", crypto.Base64Encode(hash))
+	row := l.db.QueryRow("Select Id from Blockchain where Hash=$1", Base64Encode(hash))
 	err := row.Scan(&idscan)
 	if err != nil {
 		return 0, err
@@ -139,7 +137,7 @@ func (l *LevelDB) idByHash(hash []byte) (uint64, error) {
 
 func (l *LevelDB) blockByHash(hash []byte) (*Block, error) {
 	var pBlock string
-	row := l.db.QueryRow("Select Block from Blockchain where Hash=$1", hash)
+	row := l.db.QueryRow("Select Block from Blockchain where Hash=$1", Base64Encode(hash))
 	err := row.Scan(&pBlock)
 	if err != nil {
 		return nil, err
@@ -172,7 +170,7 @@ func (l *LevelDB) getBlocksFromHash(hash []byte) ([]*Block, error) {
 	}
 	curId := l.size()
 	blocks := make([]*Block, 0)
-	for i := idx; i <= curId; i++ {
+	for i := idx + 1; i <= curId; i++ {
 		b, err := l.blockById(i)
 		if err != nil {
 			return nil, err

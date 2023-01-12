@@ -61,7 +61,7 @@ func (bc *Blockchain) InsertBlock(block *Block) error {
 	if err != nil {
 		return err
 	}
-	err = bc.levelDb.insertBlock(Base64Encode(block.CurHash), serializeBlock)
+	err = bc.levelDb.insertBlock(block.CurHash, serializeBlock)
 	return err
 }
 
@@ -74,7 +74,7 @@ func (bc *Blockchain) LastBlock() *Block {
 }
 
 func (bc *Blockchain) BlockInChain(block *Block) bool {
-	hash := block.PrevHash
+	hash := block.CurHash
 	blockcopy, err := bc.levelDb.blockByHash(hash)
 	if err != nil {
 		return false
@@ -82,8 +82,7 @@ func (bc *Blockchain) BlockInChain(block *Block) bool {
 	if blockcopy == nil {
 		return false
 	}
-	if blockcopy.Timestamp == block.Timestamp &&
-		block.Nonce == blockcopy.Nonce && bytes.Equal(block.CurHash, blockcopy.CurHash) {
+	if bytes.Equal(blockcopy.CurHash, block.CurHash) && bytes.Equal(block.PrevHash, blockcopy.PrevHash) {
 		return true
 	}
 	return false

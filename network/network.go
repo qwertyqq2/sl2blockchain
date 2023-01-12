@@ -40,7 +40,6 @@ func serve(listener net.Listener, handle func(Conn, *Package)) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println(err)
 			return
 		}
 		go handleConn(conn, handle)
@@ -51,7 +50,6 @@ func handleConn(conn net.Conn, handle func(Conn, *Package)) {
 	defer conn.Close()
 	pack := readPack(conn)
 	if pack == nil {
-		log.Println(ErrNotPack)
 		return
 	}
 	//fmt.Println("req", time.Now(), pack.Option, pack.Data)
@@ -92,18 +90,15 @@ func readPack(conn net.Conn) *Package {
 func Send(address string, pack *Package) *Package {
 	conn, err := net.Dial("tcp", address)
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 	defer conn.Close()
 	serilizePack, err := SerializePack(pack)
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 	_, err = conn.Write([]byte(serilizePack + EndBytes))
 	if err != nil {
-		log.Println(err)
 		return nil
 	}
 	var (
@@ -118,7 +113,6 @@ func Send(address string, pack *Package) *Package {
 	case <-ch:
 
 	case <-time.After(Waitime * time.Second):
-		log.Println(ErrTimeWait)
 		return nil
 	}
 	return res
